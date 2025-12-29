@@ -4,19 +4,19 @@
 // Crea la textura
 //------------------------
 void Texture::initTexture(const char *textureFile) {
-    
+
  // Creamos la textura a configurar
-    glGenTextures(1,&texture);  
+    glGenTextures(1,&texture);
     glBindTexture(GL_TEXTURE_2D, texture);
-    
+
  // Cargamos la imagen
     unsigned int  w, h;
-    unsigned char *pixels = loadTexture(textureFile, w, h);  
-    
+    unsigned char *pixels = loadTexture(textureFile, w, h);
+
  // Creamos la textura
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void *)pixels);
     glGenerateMipmap(GL_TEXTURE_2D);
-    
+
  // Configuramos la textura
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

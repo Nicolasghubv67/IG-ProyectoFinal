@@ -28,6 +28,14 @@ void Model::initModel(const char *modelFile) {
         normals.push_back(glm::normalize(glm::vec3(mesh->mNormals[i].x,mesh->mNormals[i].y,mesh->mNormals[i].z)));
         if(mesh->mTextureCoords[0]) textureCoords.push_back(glm::vec2(mesh->mTextureCoords[0][i].x,mesh->mTextureCoords[0][i].y));
         else                        textureCoords.push_back(glm::vec2(0.0f, 0.0f));
+        // Tangente/bitangente (Assimp las calcula con aiProcess_CalcTangentSpace)
+        if(mesh->mTangents && mesh->mBitangents) {
+            tangents.push_back(glm::normalize(glm::vec3(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z)));
+            bitangents.push_back(glm::normalize(glm::vec3(mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z)));
+        } else {
+            tangents.push_back(glm::vec3(1,0,0));
+            bitangents.push_back(glm::vec3(0,0,1));
+        }
     }
     for(int i=0; i<mesh->mNumFaces; i++) {
         aiFace face = mesh->mFaces[i];
@@ -39,6 +47,8 @@ void Model::initModel(const char *modelFile) {
     glGenBuffers(1,&vboPositions);
     glGenBuffers(1,&vboNormals);
     glGenBuffers(1,&vboTextureCoords);
+    glGenBuffers(1,&vboTangents);
+    glGenBuffers(1,&vboBitangents);
     glGenBuffers(1,&eboIndices);
     glBindVertexArray(vao);
      // Posiciones
@@ -56,6 +66,17 @@ void Model::initModel(const char *modelFile) {
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2)*textureCoords.size(), &(textureCoords.front()), GL_STATIC_DRAW);
         glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, 0); 
         glEnableVertexAttribArray(2);
+     // Tangentes (location=3)
+        glBindBuffer(GL_ARRAY_BUFFER, vboTangents);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*tangents.size(), &(tangents.front()), GL_STATIC_DRAW);
+        glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(3);
+     // Bitangentes (location=4)
+        glBindBuffer(GL_ARRAY_BUFFER, vboBitangents);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*bitangents.size(), &(bitangents.front()), GL_STATIC_DRAW);
+        glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(4);
+
      // Índices
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboIndices);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned short)*indices.size(), &(indices.front()), GL_STATIC_DRAW);
@@ -84,6 +105,8 @@ Model::~Model() {
     glDeleteBuffers(1,&vboPositions);
     glDeleteBuffers(1,&vboNormals);
     glDeleteBuffers(1,&vboTextureCoords);
+    glDeleteBuffers(1,&vboTangents);
+    glDeleteBuffers(1,&vboBitangents);
     glDeleteBuffers(1,&eboIndices);
     
 }

@@ -9,7 +9,7 @@ class Texture {
     
     public:
                
-        void         initTexture(const char *textureFile); 
+        void         initTexture(const char *textureFile);
         unsigned int getTexture(); 
 
         virtual ~Texture();

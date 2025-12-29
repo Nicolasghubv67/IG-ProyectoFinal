@@ -140,28 +140,20 @@ void Shaders::setMaterial(const std::string &name, Material value) {
 //--------------------------------------------------------------------
 // Fija el valor de una variable uniforme (sampler2D) de tipo Texture
 //--------------------------------------------------------------------
-void Shaders::setTextures(const std::string &name, Textures value) {
-   
-    glActiveTexture(GL_TEXTURE0 + value.diffuse);
-    glBindTexture(GL_TEXTURE_2D,value.diffuse);
-    glUniform1i(glGetUniformLocation(program,(name+".diffuse").c_str()), value.diffuse);
-    
-    glActiveTexture(GL_TEXTURE0 + value.specular);
-    glBindTexture(GL_TEXTURE_2D,value.specular);
-    glUniform1i(glGetUniformLocation(program,(name+".specular").c_str()), value.specular);
-    
-    glActiveTexture(GL_TEXTURE0 + value.emissive);
-    glBindTexture(GL_TEXTURE_2D,value.emissive);
-    glUniform1i(glGetUniformLocation(program,(name+".emissive").c_str()), value.emissive);
-    
-    if(value.normal!=0) {
-        glActiveTexture(GL_TEXTURE0 + value.normal);
-        glBindTexture(GL_TEXTURE_2D,value.normal);
-        glUniform1i(glGetUniformLocation(program,(name+".normal"  ).c_str()), value.normal);
-    }
-    
-    glUniform1f (glGetUniformLocation(program,(name+".shininess").c_str()), value.shininess);
-            
+void Shaders::setTextures(const std::string &name, Textures t) {
+    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, t.diffuse);
+    glUniform1i(glGetUniformLocation(program,(name+".diffuse").c_str()), 0);
+
+    glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, t.specular);
+    glUniform1i(glGetUniformLocation(program,(name+".specular").c_str()), 1);
+
+    glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, t.emissive);
+    glUniform1i(glGetUniformLocation(program,(name+".emissive").c_str()), 2);
+
+    glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, t.normal);
+    glUniform1i(glGetUniformLocation(program,(name+".normal").c_str()), 3);
+
+    glUniform1f(glGetUniformLocation(program,(name+".shininess").c_str()), t.shininess);
 }
 
 //------------------------------------------------------
