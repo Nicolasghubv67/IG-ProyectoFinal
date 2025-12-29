@@ -259,11 +259,11 @@ void renderScene() {
 
    drawObjectTex(plane, sueloTex, P, V, S);
 
-      T = glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 0.0f));
+   T = glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 5.0f, 0.0f));
 
-      R = glm::rotate(I, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+   R = glm::rotate(I, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-      drawObjectTex(plane, paredAreniscaTex, P, V, T*R*S);
+   drawObjectTex(plane, paredAreniscaTex, P, V, T*R*S);
 
 }
 
