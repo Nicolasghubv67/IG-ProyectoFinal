@@ -19,3 +19,84 @@
 - Cámara orbital por ratón (botón izq).
 - `N` activa/desactiva normal mapping global (`uWithNormals`).
 - Flechas mueven la luz posicional en X/Z y se actualiza su esfera.
+
+## Commit 2
+
+# Cambios en `main.cpp` – Resumen
+
+Este commit introduce una **reestructuración completa del sistema de cámara e interacción**, manteniendo intactos el renderizado, los shaders, la iluminación y el modelado de la escena.
+
+
+## 1. Cambio de cámara: orbital → FPS
+
+- Se elimina la cámara orbital basada en ángulos `alphaX / alphaY`.
+- Se implementa una **cámara tipo FPS**, definida por:
+    - Posición (`camPos`)
+    - Dirección de visión (`camFront`)
+    - Vector vertical (`camUp`)
+    - Ángulos `yaw` y `pitch`
+- La matriz de vista pasa a construirse con `lookAt(camPos, camPos + camFront, camUp)`.
+
+Resultado: la cámara ya no gira alrededor del origen, sino que se mueve libremente por la escena.
+
+---
+
+## 2. Movimiento independiente del framerate (deltaTime)
+
+- Se añade cálculo de tiempo por frame (`deltaTime`).
+- Todo el movimiento de cámara y ajustes depende de `deltaTime`.
+- Se limita el valor máximo para evitar saltos tras parones.
+
+Resultado: movimiento fluido y consistente independientemente de los FPS.
+
+---
+
+## 3. Separación entre eventos y lógica por frame
+
+Se introducen dos funciones nuevas:
+- `processCameraMove`: movimiento continuo de la cámara (WASD, espacio, shift).
+- `processTuning`: ajuste progresivo de sensibilidad del ratón y velocidad de cámara.
+
+Resultado: mejora la estructura.
+
+---
+
+## 4. Sistema de control del ratón
+
+- El ratón se **captura con clic izquierdo** y se libera con `ESC`.
+- Se añade control del primer frame (`firstMouse`) para evitar saltos bruscos al capturar.
+- La rotación se basa en desplazamientos relativos del cursor.
+
+Resultado: rotación suave y estable de la cámara en modo FPS.
+
+---
+
+## 5. Proyección dinámica (FOV)
+
+- El campo de visión (`fovy`) pasa a ser dinámico.
+- Se controla con la rueda del ratón.
+- Se limita entre 30° y 90°.
+- El título de la ventana muestra FOV, sensibilidad y velocidad actuales.
+
+---
+
+## 6. Ajustes adicionales
+
+- `renderScene` recibe ahora el puntero a la ventana (`GLFWwindow*`).
+- Se amplía el plano lejano de la proyección (`far = 100`).
+- Se añade callback para botones del ratón.
+
+---
+
+## 7. Elementos no modificados
+
+- No se cambian:
+    - Shaders
+    - Iluminación
+    - Texturas
+    - Modelos
+    - Transformaciones de los objetos (`M = T · R · S`)
+
+El cambio afecta **únicamente a la cámara y a la interacción**.
+
+---

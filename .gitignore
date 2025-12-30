@@ -5,7 +5,7 @@
 *.slo
 *.lo
 *.o
-*.obj
+
 
 # Precompiled Headers
 *.gch
@@ -40,3 +40,4 @@
 # debug information files
 *.dwo
 diff del primer commit importante.txt
+src/diff.txt
