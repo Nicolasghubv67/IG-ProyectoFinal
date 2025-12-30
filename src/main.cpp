@@ -3,6 +3,7 @@
 #include <sstream>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include "Camera.h"
 #include "Shaders.h"
 #include "Model.h"
 #include "Texture.h"
@@ -19,13 +20,13 @@ void funScroll         (GLFWwindow* window, double xoffset, double yoffset);
 void funCursorPos      (GLFWwindow* window, double xpos, double ypos);
 void funMouseButton    (GLFWwindow* window, int button, int action, int mods);
 
-//Funciones por frame
-void processCameraMove (GLFWwindow* window);
-void processTuning(GLFWwindow* window);
 
 // Tiempo
    float deltaTime = 0.0f;
    float lastFrame = 0.0f;
+
+// Cámara
+   CameraFPS camera;
 
 // Shaders
    Shaders shaders;
@@ -46,26 +47,7 @@ void processTuning(GLFWwindow* window);
    Texture paredAreniscaDiffuse, paredAreniscaNormal, paredAreniscaSpecular;
    Textures paredAreniscaTex;
 
-// Cámara tipo FPS
-   glm::vec3 camPos   = glm::vec3(0.0f, 5.0f, 8.0f);
-   glm::vec3 camFront = glm::vec3(0.0f, 0.0f, -1.0f);
-   glm::vec3 camUp    = glm::vec3(0.0f, 1.0f, 0.0f);
 
-   float yaw = -90.0f;
-   float pitch = 0.0f;
-
-   float fovy = 60.0f;               // 30..90
-   float mouseSensitivity = 0.12f;   // 0.01..1.00
-   float camSpeed = 5.0f;            // 0.5..50
-
-   // “hold timers” para aceleración
-   float holdSensDec = 0.0f, holdSensInc = 0.0f;
-   float holdSpeedDec = 0.0f, holdSpeedInc = 0.0f;
-
-   bool  mouseCaptured = false;
-   bool  firstMouse    = true;
-   double lastMouseX   = 0.0;
-   double lastMouseY   = 0.0;
 
 //Configuración de escena
    bool useNormals  = true;
@@ -246,44 +228,41 @@ void configScene() {
 
 void renderScene(GLFWwindow* window) {
 
- // Borramos el buffer de color
+// Borramos el buffer de color
    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-   std::ostringstream ss;
-   ss << "Proyecto Nicolás | FOV " << std::fixed << std::setprecision(2) << fovy
-      << " | Sens " << std::fixed << std::setprecision(2) << mouseSensitivity
-      << " | Speed " << std::fixed << std::setprecision(2) << camSpeed;
+// Indicamos los shaders a utilizar
+   shaders.useShaders();
 
-   glfwSetWindowTitle(window, ss.str().c_str());
-
-
- // Indicamos los shaders a utilizar
-    shaders.useShaders();
-
-   //Actualización del tiempo en cada frame
+//Actualización del tiempo en cada frame
    float now = (float)glfwGetTime();
    deltaTime = now - lastFrame;
    lastFrame = now;
    deltaTime = std::min(deltaTime, 0.033f);
 
-   // Actualiza movimiento por WASD cada frame (suave, con deltaTime)
-   processTuning(window);
-   processCameraMove(window);
+//Actualización del nombre de ventana
+   std::ostringstream ss;
+   ss << "Proyecto Nicolás | FOV " << std::fixed << std::setprecision(2) << camera.fovy
+      << " | Sens " << std::fixed << std::setprecision(2) << camera.mouseSensitivity
+      << " | Speed " << std::fixed << std::setprecision(2) << camera.speed;
+   glfwSetWindowTitle(window, ss.str().c_str());
 
- // Matriz P
-    float nplane =  0.1;
-    float fplane = 100.0;
-    float aspect = (float)w/(float)h;
-    glm::mat4 P = glm::perspective(glm::radians(fovy), aspect, nplane, fplane);
+   // Cámara por frame
+   camera.update(window, deltaTime);
 
-// Matriz V (FPS)
-   glm::mat4 V = glm::lookAt(camPos, camPos + camFront, camUp);
-   shaders.setVec3("ueye", camPos);
+   // Matriz P
+   float nplane = 0.1f;
+   float fplane = 100.0f;
+   float aspect = (float)w/(float)h;
+   glm::mat4 P = glm::perspective(glm::radians(camera.fovy), aspect, nplane, fplane);
+
+   // Matriz V
+   glm::mat4 V = camera.getView();
+   shaders.setVec3("ueye", camera.pos);
 
    lightP[0].position = glm::vec3(posX, 3.0f, posZ);
-
 
  // Fijamos las luces
     setLights(P,V);
@@ -380,33 +359,9 @@ void funKey(GLFWwindow* window, int key, int scancode, int action, int mods) {
       case GLFW_KEY_DOWN:  posX -= 0.5f; std::cout << "DOWN\n";break;
 
       case GLFW_KEY_ESCAPE:
-         // Si el ratón está capturado, lo soltamos; si no, cerramos.
-         if (mouseCaptured) {
-            mouseCaptured = false;
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-         } else {
+         if (!camera.onEscape(window)) {
             glfwSetWindowShouldClose(window, true);
          }
-         break;
-
-      case GLFW_KEY_LEFT_BRACKET:   // [
-         mouseSensitivity = std::max(0.02f, mouseSensitivity - 0.02f);
-         std::cout << "Sensitivity: " << mouseSensitivity << "\n";
-         break;
-
-      case GLFW_KEY_RIGHT_BRACKET:  // ]
-         mouseSensitivity = std::min(0.2f, mouseSensitivity + 0.02f);
-         std::cout << "Sensitivity: " << mouseSensitivity << "\n";
-         break;
-
-      case GLFW_KEY_MINUS:          // '
-         camSpeed = std::max(5.0f, camSpeed - 5.0f);
-         std::cout << "Speed: " << camSpeed << "\n";
-         break;
-
-      case GLFW_KEY_EQUAL:          // ¡
-         camSpeed = std::min(25.0f, camSpeed + 5.0f);
-         std::cout << "Speed: " << camSpeed << "\n";
          break;
       default:
          break;
@@ -416,100 +371,13 @@ void funKey(GLFWwindow* window, int key, int scancode, int action, int mods) {
 
 
 void funScroll(GLFWwindow* window, double xoffset, double yoffset) {
-   fovy -= (float)yoffset * 2.0f;
-   if (fovy < 30.0f) fovy = 30.0f;
-   if (fovy > 90.0f) fovy = 90.0f;
-
-   std::cout << "FOV: " << fovy << " deg\n";
+   camera.onScroll(yoffset);
 }
 
 void funCursorPos(GLFWwindow* window, double xpos, double ypos) {
-
-   if (!mouseCaptured) return;
-
-   if (firstMouse) {
-      lastMouseX = xpos;
-      lastMouseY = ypos;
-      firstMouse = false;
-      return;
-   }
-
-   double dx = xpos - lastMouseX;
-   double dy = lastMouseY - ypos;
-
-   lastMouseX = xpos;
-   lastMouseY = ypos;
-
-   yaw   += (float)(dx * mouseSensitivity);
-   pitch += (float)(dy * mouseSensitivity);
-
-   if (pitch >  89.0f) pitch =  89.0f;
-   if (pitch < -89.0f) pitch = -89.0f;
-
-   glm::vec3 front;
-   front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-   front.y = sin(glm::radians(pitch));
-   front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-   camFront = normalize(front);
+   camera.onCursorPos(xpos, ypos);
 }
 
 void funMouseButton(GLFWwindow* window, int button, int action, int mods) {
-   if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-      mouseCaptured = true;
-      firstMouse = true; // Para evitar salto al capturar
-
-      // Fijar última posición del cursor a la posición actual
-      glfwGetCursorPos(window, &lastMouseX, &lastMouseY);
-
-      glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-   }
-}
-
-void processCameraMove(GLFWwindow* window) {
-   float vel = camSpeed * deltaTime;
-   if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camPos += camFront * vel;
-   if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camPos -= camFront * vel;
-   glm::vec3 right = glm::normalize(glm::cross(camFront, camUp));
-   if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camPos += right * vel;
-   if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camPos -= right * vel;
-   if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)      camPos += camUp * vel;
-   if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) camPos -= camUp * vel;
-}
-
-static float accel(float holdSeconds) {
-   // 1.0 al inicio, sube progresivo hasta 3x
-   float a = 0.5f + 3.0f * (holdSeconds / 1.0f);
-   if (a > 3.0f) a = 3.0f;
-   return a;
-}
-
-void processTuning(GLFWwindow* window) {
-
-   // Sensibilidad
-   bool sensDec = glfwGetKey(window, GLFW_KEY_LEFT_BRACKET)  == GLFW_PRESS; // [
-   bool sensInc = glfwGetKey(window, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS; // ]
-
-   holdSensDec = sensDec ? (holdSensDec + deltaTime) : 0.0f;
-   holdSensInc = sensInc ? (holdSensInc + deltaTime) : 0.0f;
-
-   float sensStep = 0.20f * deltaTime; // base por segundo
-   if (sensDec) mouseSensitivity -= sensStep * accel(holdSensDec);
-   if (sensInc) mouseSensitivity += sensStep * accel(holdSensInc);
-
-   if (mouseSensitivity < 0.02f) mouseSensitivity = 0.02f;
-   if (mouseSensitivity > 0.2f) mouseSensitivity = 0.2f;
-
-   // Velocidad: ' y ¡
-   bool speedDec = glfwGetKey(window, GLFW_KEY_MINUS) == GLFW_PRESS; // -
-   bool speedInc = glfwGetKey(window, GLFW_KEY_EQUAL) == GLFW_PRESS; // =
-
-   holdSpeedDec = speedDec ? (holdSpeedDec + deltaTime) : 0.0f;
-   holdSpeedInc = speedInc ? (holdSpeedInc + deltaTime) : 0.0f;
-
-   float speedStep = 8.0f * deltaTime; // unidades/segundo
-   if (speedDec) camSpeed -= speedStep * accel(holdSpeedDec);
-   if (speedInc) camSpeed += speedStep * accel(holdSpeedInc);
-
-   if (camSpeed < 5.0f) camSpeed = 5.0f;
-   if (camSpeed > 25.0f) camSpeed = 25.0f;
+   camera.onMouseButton(window, button, action);
 }

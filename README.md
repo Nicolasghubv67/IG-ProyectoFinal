@@ -100,3 +100,29 @@ Resultado: rotación suave y estable de la cámara en modo FPS.
 El cambio afecta **únicamente a la cámara y a la interacción**.
 
 ---
+## Commit 3
+
+
+## Refactorización de cámara e interacción
+
+Refactorización para separar completamente la **cámara e interacción con el usuario** del archivo `main.cpp`.
+
+### Cambios realizados
+- Toda la lógica de cámara FPS (posición, orientación, yaw/pitch).
+- Movimiento con teclado (WASD, espacio, shift).
+- Captura y liberación del ratón.
+- Control de FOV con la rueda.
+- Ajuste dinámico de sensibilidad y velocidad con aceleración progresiva `+'¡.
+
+ha sido extraída a una clase independiente `CameraFPS`.
+
+### Nueva clase `CameraFPS`
+La clase encapsula:
+- Estado completo de la cámara.
+- Callbacks de ratón y scroll.
+- Actualización por frame basada en `deltaTime`.
+- Generación de la matriz de vista (`getView()`).
+
+Se implementa como **header-only**.
+
+

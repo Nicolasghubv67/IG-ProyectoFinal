@@ -15,5 +15,6 @@ set(FREEIMAGE_PATH ../libraries/freeimage)
 include_directories(${CODE_PATH} ${GLEW_PATH}/include ${GLFW_PATH}/include ${GLM_PATH}/include ${ASSIMP_PATH}/include ${FREEIMAGE_PATH}/include)
 link_directories(${GLEW_PATH}/lib ${GLFW_PATH}/lib ${GLM_PATH}/lib ${ASSIMP_PATH}/lib ${FREEIMAGE_PATH}/lib)
 file(GLOB_RECURSE CODE_FILES ${CODE_PATH}/*.*)
-add_executable(${PROJECT_NAME} ${CODE_FILES})
+add_executable(${PROJECT_NAME} ${CODE_FILES}
+        src/Camera.h)
 target_link_libraries(${PROJECT_NAME} opengl32 glu32 glew32 glfw3 assimp freeimage)
